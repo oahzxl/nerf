@@ -1,22 +1,14 @@
-import os, sys
-import numpy as np
-import imageio
-import json
-import random
+import os
 import time
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
+import imageio
 from tqdm import tqdm, trange
 
-import matplotlib.pyplot as plt
-
-from run_nerf_helpers import *
-
-from load_llff import load_llff_data
-from load_deepvoxels import load_dv_data
-from load_blender import load_blender_data
 from load_LINEMOD import load_LINEMOD_data
+from load_blender import load_blender_data
+from load_deepvoxels import load_dv_data
+from load_llff import load_llff_data
+from run_nerf_helpers import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 np.random.seed(0)
@@ -422,7 +414,7 @@ def render_rays(ray_batch,
 def config_parser():
     import configargparse
     parser = configargparse.ArgumentParser()
-    parser.add_argument('--config', is_config_file=True, default='./configs/cut_gb.txt',
+    parser.add_argument('--config', is_config_file=True, default='./configs/0321_sample1.txt',
                         help='config file path')
     parser.add_argument("--expname", type=str,
                         help='experiment name')
@@ -656,7 +648,7 @@ def train():
         with torch.no_grad():
             if args.render_test:
                 # render_test switches to test poses
-                images = images[i_test]
+                images = images[i_train]
             else:
                 # Default is smoother render_poses path
                 images = None
@@ -666,10 +658,24 @@ def train():
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', render_poses.shape)
 
-            rgbs, _ = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test, gt_imgs=images,
-                                  savedir=testsavedir, render_factor=args.render_factor)
+            rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test, gt_imgs=images,
+                                      savedir=testsavedir, render_factor=args.render_factor)
             print('Done rendering', testsavedir)
-            imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
+            imageio.mimwrite(os.path.join(testsavedir, 'spiral_image_video.mp4'), to8b(rgbs), fps=30, quality=8)
+            disps[np.isnan(disps)] = 1e5
+            disps = np.repeat(np.expand_dims(disps, axis=3), 3, axis=3)
+            disps = disps / np.percentile(disps.reshape(-1), 95)
+            imageio.mimwrite(os.path.join(testsavedir, 'spiral_depth_video.mp4'), to8b(disps), fps=30, quality=8)
+
+            poses = torch.Tensor(poses).to(device)
+            rgbs, disps = render_path(poses, hwf, K, args.chunk, render_kwargs_test, gt_imgs=images,
+                                      savedir=testsavedir, render_factor=args.render_factor)
+            print('Done rendering', testsavedir)
+            imageio.mimwrite(os.path.join(testsavedir, 'input_image_video.mp4'), to8b(rgbs), fps=10, quality=8)
+            disps[np.isnan(disps)] = 1e5
+            disps = np.repeat(np.expand_dims(disps, axis=3), 3, axis=3)
+            disps = disps / np.percentile(disps.reshape(-1), 95)
+            imageio.mimwrite(os.path.join(testsavedir, 'input_depth_video.mp4'), to8b(disps), fps=10, quality=8)
 
             return
 
