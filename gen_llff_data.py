@@ -17,9 +17,12 @@ def read_video(video_path, save_path):
     if os.path.exists(save_path):
         shutil.rmtree(save_path)
     os.mkdir(save_path)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        cv2.imwrite(os.path.join(save_path, '%d.jpg' % n), frame)
+    _, frame = cap.read()
+    while frame is not None:
+        name = str(n)
+        name = '0' * (6 - len(name)) + name
+        cv2.imwrite(os.path.join(save_path, '%s.jpg' % name), frame)
+        _, frame = cap.read()
         n += 1
     cap.release()
 
@@ -408,10 +411,10 @@ def mask(img_path, mask_path):
 
 
 if __name__ == '__main__':
-    # read_video(video_path='/Users/zxl/Documents/Projects/caricature/nerf/data/nerf_llff_data/cut_gb/cut_gb.mov',
-    # save_path='./images')
-    multi_res('./data/nerf_llff_data/black_half/images')
+    read_video(video_path='./data/0321_sample/sample11.mp4',
+    save_path='./data/0321_sample/sample11/images')
+    multi_res('./data/0321_sample/sample11/images')
     # crop('data/nerf_llff_data/sth_l/images')
-    # gen_poses('./data/nerf_llff_data/yellow', 'exhaustive_matcher')
+    gen_poses('./data/0321_sample/sample11', 'exhaustive_matcher')
     # mask('data/nerf_llff_data/sth_l/crop', '/home/zhaoxuanlei/repos/PaddleSeg/contrib/Matting/output/results')
     print('Done.')
