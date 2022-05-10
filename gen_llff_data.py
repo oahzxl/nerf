@@ -411,9 +411,9 @@ def mask(img_path, mask_path):
 
 
 if __name__ == '__main__':
-    read_video(video_path='./data/0321_sample/sample11.mp4',
-    save_path='./data/0321_sample/sample11/images')
-    multi_res('./data/0321_sample/sample11/images')
+    # read_video(video_path='./data/0321_sample/sample11.mp4',
+    # save_path='./data/0321_sample/sample11/images')
+    # multi_res('./data/0321_sample/sample11/images')
     # crop('data/nerf_llff_data/sth_l/images')
     gen_poses('./data/0321_sample/sample11', 'exhaustive_matcher')
     # mask('data/nerf_llff_data/sth_l/crop', '/home/zhaoxuanlei/repos/PaddleSeg/contrib/Matting/output/results')

@@ -148,7 +148,9 @@ def render_path(render_poses, hwf, K, chunk, render_kwargs, gt_imgs=None, savedi
         disps.append(disp.cpu().numpy())
         if i == 0:
             print(rgb.shape, disp.shape)
-
+        disps[-1] = np.nan_to_num(disps[-1])
+        disps[-1][disps[-1] > np.percentile(disps[-1], 90)] = np.percentile(disps[-1], 90)
+        disps[-1][disps[-1] < np.percentile(disps[-1], 10)] = np.percentile(disps[-1], 10)
         """
         if gt_imgs is not None and render_factor==0:
             p = -10. * np.log10(np.mean(np.square(rgb.cpu().numpy() - gt_imgs[i])))
@@ -658,14 +660,14 @@ def train():
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', render_poses.shape)
 
-            rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test, gt_imgs=images,
-                                      savedir=testsavedir, render_factor=args.render_factor)
-            print('Done rendering', testsavedir)
-            imageio.mimwrite(os.path.join(testsavedir, 'spiral_image_video.mp4'), to8b(rgbs), fps=30, quality=8)
-            disps[np.isnan(disps)] = 1e5
-            disps = np.repeat(np.expand_dims(disps, axis=3), 3, axis=3)
-            disps = disps / np.percentile(disps.reshape(-1), 95)
-            imageio.mimwrite(os.path.join(testsavedir, 'spiral_depth_video.mp4'), to8b(disps), fps=30, quality=8)
+            # rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test, gt_imgs=images,
+            #                           savedir=testsavedir, render_factor=args.render_factor)
+            # print('Done rendering', testsavedir)
+            # imageio.mimwrite(os.path.join(testsavedir, 'spiral_image_video.mp4'), to8b(rgbs), fps=30, quality=8)
+            # disps[np.isnan(disps)] = 1e5
+            # disps = np.repeat(np.expand_dims(disps, axis=3), 3, axis=3)
+            # disps = disps / np.percentile(disps.reshape(-1), 95)
+            # imageio.mimwrite(os.path.join(testsavedir, 'spiral_depth_video.mp4'), to8b(disps), fps=30, quality=8)
 
             poses = torch.Tensor(poses).to(device)
             rgbs, disps = render_path(poses, hwf, K, args.chunk, render_kwargs_test, gt_imgs=images,
@@ -811,9 +813,11 @@ def train():
         if i % args.i_video == 0 and i > 0:
             # Turn on testing mode
             with torch.no_grad():
-                rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test)
+                # rgbs, disps = render_path(render_poses, hwf, K, args.chunk, render_kwargs_test)
+                rgbs, disps = render_path(poses, hwf, K, args.chunk, render_kwargs_test)
             print('Done, saving', rgbs.shape, disps.shape)
-            moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, i))
+            # moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, i))
+            moviebase = os.path.join(basedir, expname, '{}_input_{:06d}_'.format(expname, i))
             imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
             imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
 
